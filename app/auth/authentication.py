@@ -5,6 +5,7 @@ import sys
 from app.logger.log import logging
 from app.exception.exception_handler import (
     AppException, 
+    AuthenticationError, 
     UserNotFoundError, 
     PasswordMismatchError
 )

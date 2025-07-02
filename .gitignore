@@ -14,3 +14,4 @@ resources/vectorstore
 .env
 logs
 chroma_db
+app/.DS_Store

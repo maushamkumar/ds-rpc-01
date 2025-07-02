@@ -1,3 +1,221 @@
+# from typing import Dict
+
+# from fastapi import FastAPI, HTTPException, Depends
+# from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
+
+# app = FastAPI()
+# security = HTTPBasic()
+
+# # Dummy user database
+# users_db: Dict[str, Dict[str, str]] = {
+#     "Tony": {"password": "password123", "role": "engineering"},
+#     "Bruce": {"password": "securepass", "role": "marketing"},
+#     "Sam": {"password": "financepass", "role": "finance"},
+#     "Peter": {"password": "pete123", "role": "engineering"},
+#     "Sid": {"password": "sidpass123", "role": "marketing"},
+#     "Natasha": {"passwoed": "hrpass123", "role": "hr"}
+# }
+
+
+# # Authentication dependency
+# def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
+#     username = credentials.username
+#     password = credentials.password
+#     user = users_db.get(username)
+#     if not user or user["password"] != password:
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+#     return {"username": username, "role": user["role"]}
+
+
+# # Login endpoint
+# @app.get("/login")
+# def login(user=Depends(authenticate)):
+#     return {"message": f"Welcome {user['username']}!", "role": user["role"]}
+
+
+# # Protected test endpoint
+# @app.get("/test")
+# def test(user=Depends(authenticate)):
+#     return {"message": f"Hello {user['username']}! You can now chat.", "role": user["role"]}
+
+
+# # Protected chat endpoint
+# @app.post("/chat")
+# def query(user=Depends(authenticate), message: str = "Hello"):
+#     return "Implement this endpoint."
+
+
+# app.py
+
+# from config.settings import Settings
+
+# def main():
+#     config = Settings()
+#     print("Groq Key:", config.groq_api_key)
+#     print("Model:", config.embedding_model)
+
+# if __name__ == "__main__":
+#     main()
+
+
+# app/main.py
+
+# from auth.authentication import UserManager
+
+# def test_auth():
+#     um = UserManager()
+
+#     test_cases = [
+#         ("finance_user", "finance123"),
+#         ("marketing_user", "wrongpassword"),
+#         ("ceo", "ceo123"),
+#         ("employee", "emp123"),
+#         ("hr_user", "hr123"),
+#         ("invalid_user", "somepass"),
+#     ]
+
+#     for username, password in test_cases:
+#         result = um.authenticate(username, password)
+#         if result:
+#             print(f"✅ Authenticated {username} → Role: {result['role']}")
+#         else:
+#             print(f"❌ Authentication failed for {username}")
+
+# if __name__ == "__main__":
+#     test_auth()
+
+
+# app/main.py
+
+# from auth.rbac import RolePermissions
+
+# def test_permissions():
+#     roles = ["finance", "marketing", "hr", "engineering", "c_level", "employee", "guest"]
+#     sources = ["finance", "marketing", "hr", "engineering", "general", "unknown"]
+
+#     print("📋 Testing get_allowed_sources:")
+#     for role in roles:
+#         allowed = RolePermissions.get_allowed_sources(role)
+#         print(f"  🔑 {role}: {allowed}")
+
+#     print("\n🔐 Testing can_access_source:")
+#     test_cases = [
+#         ("finance", "finance"),
+#         ("finance", "hr"),
+#         ("employee", "general"),
+#         ("employee", "finance"),
+#         ("c_level", "marketing"),
+#         ("guest", "general"),
+#         ("guest", "finance"),
+#     ]
+
+#     for role, source in test_cases:
+#         result = RolePermissions.can_access_source(role, source)
+#         print(f"  {role} → {source}: {'✅ Access' if result else '❌ Denied'}")
+
+# if __name__ == "__main__":
+#     test_permissions()
+
+
+
+
+# app/main.py
+
+# from rag.document_loader import DocumentLoader
+# import pprint
+
+# def test_document_loader():
+#     data_dir = "app/data/"  # Adjust if needed
+#     department = "finance"      # Try with 'hr' too
+
+#     loader = DocumentLoader(data_dir)
+#     documents = loader.load_documents_by_department(department)
+
+#     print(f"\n📄 Loaded {len(documents)} documents for department: {department}\n")
+#     for doc in documents:
+#         print("Source:", doc['source'])
+#         print("Department:", doc['department'])
+#         print("Path:", doc['metadata']['file_path'])
+#         print("Content Preview:", doc['content'][:200], "...\n")  # print first 200 chars
+
+# if __name__ == "__main__":
+#     test_document_loader()
+
+
+# app/main.py
+
+# from app.rag.document_loader import DocumentLoader
+# from app.rag.embeddings import EmbeddingManager
+
+# def test_embedding_flow():
+#     department = "hr"
+#     data_path = "app/data"
+
+#     # 1. Load documents
+#     loader = DocumentLoader(data_path)
+#     documents = loader.load_documents_by_department(department)
+#     print(f"✅ Loaded {len(documents)} documents.")
+
+#     # 2. Embed & store in ChromaDB
+#     embedder = EmbeddingManager()
+#     embedder.add_documents(department, documents)
+#     print(f"✅ Embedded and stored documents for department: {department}")
+
+#     # 3. Test a search query
+#     query = "annual financial report"
+#     results = embedder.search(query, departments=[department])
+#     print(f"\n🔍 Search Results for: '{query}'\n")
+
+#     for res in results:
+#         print("📄 Content:", res['content'][:150])
+#         print("📁 Source:", res['metadata']['source'])
+#         print("🏷️ Chunk ID:", res['metadata']['chunk_id'])
+#         print("📏 Distance:", res['distance'])
+#         print("--------")
+
+# if __name__ == "__main__":
+#     test_embedding_flow()
+
+
+# from dotenv import load_dotenv
+# import os
+
+# from rag.document_loader import DocumentLoader
+# from rag.embeddings import EmbeddingManager
+# from rag.generation import ResponseGenerator  # <- your current code
+
+# def test_response_generator():
+#     # Step 1: Load env
+#     load_dotenv()
+#     api_key = os.getenv("GROQ_API_KEY")
+#     if not api_key:
+#         raise ValueError("GROQ_API_KEY not found in environment!")
+
+#     # Step 2: Load documents
+#     department = "finance"
+#     loader = DocumentLoader("data")
+#     docs = loader.load_documents_by_department(department)
+
+#     # Step 3: Embed & store
+#     embedder = EmbeddingManager()
+#     embedder.add_documents(department, docs)
+
+#     # Step 4: Search relevant docs
+#     query = "What is the total budget for 2024?"
+#     top_docs = embedder.search(query, departments=[department])
+
+#     # Step 5: Generate response
+#     generator = ResponseGenerator(api_key)
+#     answer = generator.generate_response(query, context_documents=top_docs, user_role="finance")
+
+#     print("\n🧠 AI Answer:\n")
+#     print(answer)
+
+# if __name__ == "__main__":
+#     test_response_generator()
+
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel

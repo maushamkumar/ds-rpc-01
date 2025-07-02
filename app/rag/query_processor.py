@@ -2,7 +2,7 @@
 import re
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
-from retrieval import DocumentRetriever, RetrievalResult
+from app.rag.retrieval import DocumentRetriever, RetrievalResult
 
 @dataclass
 class ProcessedQuery:

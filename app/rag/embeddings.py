@@ -1,3 +1,164 @@
+# import uuid
+# from typing import List, Dict
+
+# import chromadb
+# from sentence_transformers import SentenceTransformer
+
+# from logger.log import logger
+# from exception.exception_handler import (
+#     EmbeddingModelError,
+#     CollectionError,
+#     DocumentChunkingError,
+#     SearchError
+# )
+
+
+# class EmbeddingManager:
+#     def __init__(self, model_name: str = "all-MiniLM-L6-v2", persist_directory: str = "./chroma_db"):
+#         """
+#         🧠 Initialize the EmbeddingManager with a model and persistent chromadb client.
+
+#         Args:
+#             model_name (str): Name of the sentence transformer model.
+#             persist_directory (str): Path to the persistent Chroma database.
+#         """
+#         try:
+#             logger.info(f"🧠 Initializing EmbeddingManager with model: {model_name}")
+#             self.model = SentenceTransformer(model_name)
+#             self.client = chromadb.PersistentClient(path=persist_directory)
+#             self.collections = {}
+#             logger.info("✅ EmbeddingManager initialized successfully.")
+#         except Exception as e:
+#             logger.exception("❌ Failed to initialize EmbeddingManager.")
+#             raise EmbeddingModelError(model_name) from e
+
+#     def create_collection(self, department: str):
+#         """
+#         📁 Create or retrieve a ChromaDB collection for the department.
+
+#         Args:
+#             department (str): Department name used to label the collection.
+#         """
+#         try:
+#             logger.info(f"Start creating Collection file name")
+#             collection_name = f"{department}_docs"
+#             self.collections[department] = self.client.get_or_create_collection(name=collection_name)
+#             logger.info(f"📁 Collection created or loaded: {collection_name}")
+#         except Exception as e:
+#             logger.exception(f"❌ Failed to create or load collection for department: {department}")
+#             raise CollectionError(department) from e
+
+#     def add_documents(self, department: str, documents: List[Dict]):
+#         """
+#         📝 Add embedded document chunks into the corresponding department collection.
+
+#         Args:
+#             department (str): Department the documents belong to.
+#             documents (List[Dict]): List of document data dictionaries.
+#         """
+#         try:
+#             if department not in self.collections:
+#                 self.create_collection(department)
+
+#             logger.info(f"Stated Adding documents for department: {department}")
+#             collection = self.collections[department]
+
+#             for doc in documents:
+#                 chunks = self._split_text(doc["content"])
+
+#                 for i, chunk in enumerate(chunks):
+#                     doc_id = f"{doc['source']}_{i}"
+#                     embedding = self.model.encode([chunk])[0]
+
+#                     collection.add(
+#                         embeddings=[embedding.tolist()],
+#                         documents=[chunk],
+#                         metadatas=[{
+#                             "source": doc["source"],
+#                             "department": department,
+#                             "chunk_id": i
+#                         }],
+#                         ids=[doc_id]
+#                     )
+#             logger.info(f"✅ Added documents for department: {department}")
+#         except Exception as e:
+#             logger.exception(f"❌ Failed to embed or store documents for department: {department}")
+#             raise EmbeddingModelError(department) from e
+
+#     def _split_text(self, text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+#         """
+#         ✂️ Split large text into smaller overlapping chunks for embedding.
+
+#         Args:
+#             text (str): The full document text.
+#             chunk_size (int): Size of each chunk.
+#             overlap (int): Number of overlapping characters between chunks.
+
+#         Returns:
+#             List[str]: List of text chunks.
+#         """
+#         try:
+#             logger.info(f"Start spliting text into chunks.")
+#             chunks = []
+#             start = 0
+
+#             while start < len(text):
+#                 end = start + chunk_size
+#                 chunk = text[start:end]
+#                 chunks.append(chunk)
+#                 start = end - overlap
+
+#                 if end >= len(text):
+#                     break
+
+#             logger.debug(f"🔹 Split text into {len(chunks)} chunks.")
+#             return chunks
+#         except Exception as e:
+#             logger.exception("❌ Failed while splitting text.")
+#             raise DocumentChunkingError() from e
+
+#     def search(self, query: str, departments: List[str], n_results: int = 5) -> List[Dict]:
+#         """
+#         🔍 Perform semantic search across one or more departments.
+
+#         Args:
+#             query (str): User query string.
+#             departments (List[str]): List of departments to search.
+#             n_results (int): Number of results to return.
+
+#         Returns:
+#             List[Dict]: Ranked list of matching document chunks.
+#         """
+#         try:
+#             logger.info(f"Start Searching query in: '{query}'")
+#             query_embedding = self.model.encode([query])[0]
+#             results = []
+
+#             for dept in departments:
+#                 if dept in self.collections:
+#                     collection = self.collections[dept]
+#                     search_results = collection.query(
+#                         query_embeddings=[query_embedding.tolist()],
+#                         n_results=n_results
+#                     )
+
+#                     for i in range(len(search_results['documents'][0])):
+#                         results.append({
+#                             "content": search_results['documents'][0][i],
+#                             "metadata": search_results['metadatas'][0][i],
+#                             "distance": search_results['distances'][0][i]
+#                         })
+
+#             results.sort(key=lambda x: x['distance'])  # Sort by relevance
+#             logger.info(f"🔍 Search completed for query: '{query}' with {len(results)} total results.")
+#             return results[:n_results]
+#         except Exception as e:
+#             logger.exception("❌ Search failed.")
+#             raise SearchError(query) from e
+
+
+
+# app/rag/embeddings.py - Improved version
 from sentence_transformers import SentenceTransformer
 import chromadb
 from typing import List, Dict, Optional, Tuple

@@ -39,4 +39,4 @@ try:
     logging.info("✅ Settings loaded successfully.")
 except Exception as e:
     logging.error("❌ Failed to load settings.", exc_info=True)
-    raise AppException(e) from e
+    raise AppException(e, sys) from e
