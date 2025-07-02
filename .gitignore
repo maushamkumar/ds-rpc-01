@@ -12,3 +12,5 @@ wheels/
 *.lock
 resources/vectorstore
 .env
+logs
+chroma_db
